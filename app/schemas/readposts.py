@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
-from app.schemas.moment import Post
 class UserInfo(BaseModel):
     user_id: int
     avatar: str

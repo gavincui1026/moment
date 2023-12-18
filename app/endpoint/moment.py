@@ -1,6 +1,7 @@
+import asyncio
+from collections import defaultdict
 from datetime import datetime
 from typing import List, Optional
-
 from sqlalchemy.orm import selectinload
 
 from app.auth.verify_token import verify_token
@@ -10,6 +11,7 @@ from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.moment import Post, Likes, Comments, User, Friends
 from app.schemas.moment import PostCreate, PostLike, PostComment
+from app.schemas.mypost import PostModel,CommentModel,LikeModel
 from app.schemas.readposts import ReadPost, Like, Comment, UserInfo,OneMoment
 from app.db.get_db import get_db
 router = APIRouter()
@@ -19,6 +21,25 @@ async def get_user_by_id(user_id: int, db: AsyncSession):
     result = await db.execute(query)
     user = result.scalars().first()  # 这应该返回一个 User 对象或 None
     return user
+async def get_likes(post_ids: List[int], db: AsyncSession) -> dict:
+    like_query = select(Likes).where(Likes.post_id.in_(post_ids))
+    likes_result = await db.execute(like_query)
+    likes = likes_result.scalars().all()
+    likes_dict = defaultdict(list)
+    for like in likes:
+        user_info = UserInfo(user_id=like.user.user_id, avatar=like.user.avatar, nickname=like.user.nickname)
+        likes_dict[like.post_id].append(Like(id=like.id, post_id=like.post_id, user=user_info))
+    return likes_dict
+
+async def get_comments(post_ids: List[int], db: AsyncSession) -> dict:
+    comment_query = select(Comments).where(Comments.post_id.in_(post_ids))
+    comments_result = await db.execute(comment_query)
+    comments = comments_result.scalars().all()
+    comments_dict = defaultdict(list)
+    for comment in comments:
+        user_info = UserInfo(user_id=comment.user.user_id, avatar=comment.user.avatar, nickname=comment.user.nickname)
+        comments_dict[comment.post_id].append(Comment(id=comment.id, post_id=comment.post_id, content=comment.content, created_at=comment.created_at, user=user_info))
+    return comments_dict
 @router.post("/create_post", response_model=PostCreate)
 # 将 HttpUrl 对象转换为字符串
 async def create_post(post: PostCreate, db: AsyncSession = Depends(get_db)):
@@ -60,67 +81,7 @@ async def comment_post(comment:PostComment, db=Depends(get_db)):
     await db.execute(query)
     await db.commit()
     return {"msg": "success"}
-@router.get("/get_posts", response_model=List[ReadPost])
-async def get_my_posts(user_id: int, last_post_timestamp: Optional[datetime] = None,
-                       db: AsyncSession = Depends(get_db)) -> List[Post]:
-    if not last_post_timestamp:
-        last_post_timestamp = datetime.utcnow()
-    query = Post.__table__.select().where(Post.user_id == user_id,
-                                               Post.create_time < last_post_timestamp).order_by(
-        Post.create_time.desc()).limit(5)
-    result = await db.execute(query)
-    rows = result.fetchall()
-    new_posts = []
 
-    for row in rows:
-        row = dict(row)
-
-        # 处理点赞信息
-        like_query = Likes.__table__.select().where(Likes.post_id == row['id'])
-        likes_result = await db.execute(like_query)
-        likes_data = likes_result.fetchall()
-
-        updated_likes = []
-        for like in likes_data:
-            like = dict(like)
-            user = await get_user_by_id(like['user_id'], db)
-            if user:
-                like_info = Like(
-                    id=like['id'],
-                    post_id=like['post_id'],
-                    user=UserInfo(user_id=user.user_id, avatar=user.avatar, nickname=user.nickname)
-                )
-                updated_likes.append(like_info)
-
-        # 处理评论信息
-        comment_query = Comments.__table__.select().where(Comments.post_id == row['id'])
-        comments_result = await db.execute(comment_query)
-        comments_data = comments_result.fetchall()
-
-        updated_comments = []
-        for comment in comments_data:
-            comment = dict(comment)
-            user = await get_user_by_id(comment['user_id'], db)
-            if user:
-                comment_info = Comment(
-                    id=comment['id'],
-                    post_id=comment['post_id'],
-                    content=comment['content'],
-                    created_at=comment['created_at'],
-                    user=UserInfo(user_id=user.user_id, avatar=user.avatar, nickname=user.nickname)
-                )
-                updated_comments.append(comment_info)
-                read_post = ReadPost(
-                    id=row['id'],
-                    user_id=row['user_id'],
-                    create_time=row['create_time'],
-                    content=row['content'],
-                    pictures=row['pictures'],
-                    likes=updated_likes,
-                    comments=updated_comments
-                )
-                new_posts.append(read_post)
-    return new_posts
 
 @router.get("/get_friends_posts", response_model=List[OneMoment])
 async def get_friends_posts(user_id: int, db: AsyncSession = Depends(get_db)):
@@ -163,8 +124,26 @@ async def get_friends_posts(user_id: int, db: AsyncSession = Depends(get_db)):
         moments.append(moment)
     return moments
 
-
-
-
-
-
+@router.get("/get_posts", response_model=List[PostModel])
+async def get_my_posts(user_id: int, last_post_timestamp: Optional[datetime] = None, db: AsyncSession = Depends(get_db)):
+    if not last_post_timestamp:
+        last_post_timestamp = datetime.utcnow()
+    query = select(Post).options(selectinload(Post.likes), selectinload(Post.comments)).where(
+        Post.user_id == user_id,
+        Post.create_time < last_post_timestamp
+    ).order_by(Post.create_time.desc()).limit(5)
+    my_posts=[]
+    result = await db.execute(query)
+    posts = result.scalars().all()
+    for post in posts:
+        my_post=PostModel(
+            id=post.id,
+            user_id=post.user_id,
+            create_time=post.create_time,
+            content=post.content,
+            pictures=post.pictures,
+            likes=[LikeModel(id=like.id,post_id=like.post_id,user_id=like.user_id) for like in post.likes],
+            comments=[CommentModel(id=comment.id,post_id=comment.post_id,user_id=comment.user_id,content=comment.content,created_at=comment.created_at) for comment in post.comments]
+        )
+        my_posts.append(my_post)
+    return my_posts

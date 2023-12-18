@@ -14,11 +14,12 @@ class PostComment(BaseModel):
     post_id: int
     user_id: int
     content: str
-class Post(BaseModel):
-    id: int
+class PostSchema(BaseModel):
     user_id: int
     content: str
     pictures: Optional[List[HttpUrl]] = None
     create_time: datetime
     likes:List[PostLike] = []
     comments:List[PostComment] = []
+class PostsSchema(BaseModel):
+    posts:List[PostSchema] = []

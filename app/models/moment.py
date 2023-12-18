@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, JSON,Text
 from sqlalchemy.ext.declarative import declarative_base
 # 定义朋友圈帖子模型
@@ -30,6 +32,7 @@ class Likes(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     post_id = Column(Integer, ForeignKey('posts.id'))
     user_id = Column(Integer, ForeignKey('lb_chat.id'), nullable=False, default=0, index=True)
+    relationship('User', backref='likes')
 
 
 class Comments(Base):
