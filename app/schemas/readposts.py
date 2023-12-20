@@ -17,6 +17,7 @@ class Comment(BaseModel):
     content: str
     created_at: datetime
     user: UserInfo
+    parent_id: int
 
 class ReadPost(BaseModel):
     id: int

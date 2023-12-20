@@ -1,9 +1,3 @@
-from typing import Optional
-
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, JSON,Text
-from sqlalchemy.ext.declarative import declarative_base
-# 定义朋友圈帖子模型
-Base = declarative_base()
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, JSON, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -42,6 +36,7 @@ class Comments(Base):
     user_id = Column(Integer, ForeignKey('lb_chat.id'), nullable=False, default=0, index=True)
     content = Column(Text)
     created_at = Column(DateTime, default=func.now())
+    parent_id = Column(Integer, default=0)
 class Friends(Base):
     __tablename__ = 'lb_chat_friend'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)

@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-
+from config.settings import settings
 # 您的异步MySQL数据库URL，通常以 "mysql+aiomysql://" 开头
-ASYNC_SQLALCHEMY_DATABASE_URL = "mysql+aiomysql://root:303816@localhost:3306/test"
+ASYNC_SQLALCHEMY_DATABASE_URL = settings.database_url
 
 engine = create_async_engine(ASYNC_SQLALCHEMY_DATABASE_URL, echo=True)
 

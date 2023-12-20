@@ -18,6 +18,7 @@ class CommentModel(BaseModel):
     user_id: int
     content: str
     created_at: datetime
+    parent_id: int
 
     class Config:
         orm_mode = True

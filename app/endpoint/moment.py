@@ -1,10 +1,7 @@
-import asyncio
 from collections import defaultdict
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import selectinload
-
-from app.auth.verify_token import verify_token
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, or_
 from sqlalchemy.dialects.mysql import insert
@@ -38,14 +35,11 @@ async def get_comments(post_ids: List[int], db: AsyncSession) -> dict:
     comments_dict = defaultdict(list)
     for comment in comments:
         user_info = UserInfo(user_id=comment.user.user_id, avatar=comment.user.avatar, nickname=comment.user.nickname)
-        comments_dict[comment.post_id].append(Comment(id=comment.id, post_id=comment.post_id, content=comment.content, created_at=comment.created_at, user=user_info))
+        comments_dict[comment.post_id].append(Comment(id=comment.id, post_id=comment.post_id, content=comment.content, created_at=comment.created_at, user=user_info, parent_id=comment.parent_id))
     return comments_dict
 @router.post("/create_post", response_model=PostCreate)
-# 将 HttpUrl 对象转换为字符串
 async def create_post(post: PostCreate, db: AsyncSession = Depends(get_db)):
-    # 将 HttpUrl 对象转换为字符串
     pictures_data = [str(url) for url in post.pictures] if post.pictures else []
-
     query = insert(Post).values(
         user_id=post.user_id,
         content=post.content,
@@ -77,6 +71,7 @@ async def comment_post(comment:PostComment, db=Depends(get_db)):
         post_id=comment.post_id,
         user_id=comment.user_id,
         content=comment.content,
+        parent_id=comment.parent_id
     )
     await db.execute(query)
     await db.commit()
@@ -118,7 +113,7 @@ async def get_friends_posts(user_id: int, db: AsyncSession = Depends(get_db)):
                 content=friend_post.Post.content,
                 pictures=friend_post.Post.pictures,
                 likes=[Like(id=like.id,post_id=like.post_id,user=UserInfo(user_id=like.user.user_id,avatar=like.user.avatar,nickname=like.user.nickname)) for like in friend_post.Post.likes],
-                comments=[Comment(id=comment.id,post_id=comment.post_id,content=comment.content,created_at=comment.created_at,user=UserInfo(user_id=comment.user.user_id,avatar=comment.user.avatar,nickname=comment.user.nickname)) for comment in friend_post.Post.comments]
+                comments=[Comment(id=comment.id,post_id=comment.post_id,content=comment.content,created_at=comment.created_at,parent_id=comment.parent_id,user=UserInfo(user_id=comment.user.user_id,avatar=comment.user.avatar,nickname=comment.user.nickname)) for comment in friend_post.Post.comments]
             )
         )
         moments.append(moment)
@@ -143,7 +138,7 @@ async def get_my_posts(user_id: int, last_post_timestamp: Optional[datetime] = N
             content=post.content,
             pictures=post.pictures,
             likes=[LikeModel(id=like.id,post_id=like.post_id,user_id=like.user_id) for like in post.likes],
-            comments=[CommentModel(id=comment.id,post_id=comment.post_id,user_id=comment.user_id,content=comment.content,created_at=comment.created_at) for comment in post.comments]
+            comments=[CommentModel(id=comment.id,post_id=comment.post_id,user_id=comment.user_id,content=comment.content,created_at=comment.created_at,parent_id=comment.parent_id) for comment in post.comments]
         )
         my_posts.append(my_post)
     return my_posts
