@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    database_url:str = 'mysql+aiomysql://root:303816@host:3306/test'
+    database_url:str = 'mysql+aiomysql://barddies:barddies@155.138.159.32:3306/barddies'
 
     class Config:
         env_file = ".env"

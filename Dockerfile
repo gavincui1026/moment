@@ -9,9 +9,9 @@ COPY . /moment
 
 # 安装依赖
 RUN pip install -r requirements.txt
-
+run pip install gunicorn
 # 指定对外暴露的端口
 EXPOSE 8000
 
 # 定义启动命令
-CMD ["python", "main.py"]
+CMD ["gunicorn", "-w 4", "b", "app:app", "--reload"]

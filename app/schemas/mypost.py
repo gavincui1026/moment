@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 
+
 # Likes的Pydantic模型
 class LikeModel(BaseModel):
     id: int
@@ -10,6 +11,7 @@ class LikeModel(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 # Comments的Pydantic模型
 class CommentModel(BaseModel):
@@ -23,6 +25,7 @@ class CommentModel(BaseModel):
     class Config:
         orm_mode = True
 
+
 # Post的Pydantic模型
 class PostModel(BaseModel):
     id: int
@@ -35,3 +38,8 @@ class PostModel(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class AllPosts(BaseModel):
+    total: int
+    posts: List[PostModel] = []
