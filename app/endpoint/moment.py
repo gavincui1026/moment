@@ -3,7 +3,7 @@ from typing import List, Optional
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, and_, join, exists
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -134,30 +134,35 @@ async def get_friends_posts(
     page_size: int = 5,
     db: AsyncSession = Depends(get_db),
 ):
-    # 获取所有朋友的 ID
-    query = select(Friends.from_id, Friends.to_id).where(
-        or_(Friends.from_id == user.id, Friends.to_id == user.id)
+    subquery = (
+        select(Friends.from_id)
+        .where(Friends.to_id == user.id, Friends.status == 1)
+        .scalar_subquery()
+    )
+    query = select(Friends).where(
+        Friends.from_id == user.id, Friends.status == 1, Friends.to_id == subquery
     )
     result = await db.execute(query)
     rows = result.fetchall()
     # 提取朋友的 ID
-    friend_ids = {row.from_id for row in rows if row.from_id != user.id}
-    friend_ids.update(row.to_id for row in rows if row.to_id != user.id)
+    friend_info = {row.Friends.to_id: row.Friends.nickname for row in rows}
 
     moments = []
     total_count = 0
 
     # 获取所有朋友的帖子
-    if friend_ids:
+    if friend_info:
         total_query = (
-            select(func.count()).select_from(Post).where(Post.user_id.in_(friend_ids))
+            select(func.count())
+            .select_from(Post)
+            .where(Post.user_id.in_(friend_info.keys()))
         )
         total_count = await db.scalar(total_query)
 
         query = (
             select(Post)
             .options(selectinload(Post.likes), selectinload(Post.comments))
-            .where(Post.user_id.in_(friend_ids))
+            .where(Post.user_id.in_(friend_info.keys()))
             .order_by(Post.create_time.desc())
             .offset(page * page_size)
             .limit(page_size)
@@ -168,6 +173,10 @@ async def get_friends_posts(
         friend_posts = []
     for friend_post in friend_posts:
         user = await get_user_by_id(friend_post.Post.user_id, db)
+        if friend_info[user.id] != "":
+            user.nickname = friend_info[user.id]
+        else:
+            user.nickname = user.nickname
         moment = OneMoment(
             user=UserInfo(user_id=user.id, avatar=user.avatar, nickname=user.nickname),
             post=ReadPost(

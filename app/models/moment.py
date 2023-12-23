@@ -78,4 +78,5 @@ class Friends(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     from_id = Column(Integer, nullable=False, default=0, index=True)
     to_id = Column(Integer, nullable=False, default=0, index=True)
-    nickname = Column(String(100), nullable=False)
+    nickname = Column(String(100), nullable=False, default="")
+    status = Column(SmallInteger, nullable=False, default=1)
