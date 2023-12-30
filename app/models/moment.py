@@ -8,6 +8,7 @@ from sqlalchemy import (
     JSON,
     Text,
     SmallInteger,
+    DECIMAL,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -80,3 +81,47 @@ class Friends(Base):
     to_id = Column(Integer, nullable=False, default=0, index=True)
     nickname = Column(String(100), nullable=False, default="")
     status = Column(SmallInteger, nullable=False, default=1)
+    is_block = Column(SmallInteger, nullable=False, default=0)
+
+
+class Block(Base):
+    __tablename__ = "lb_user_block"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False, default=0, index=True)
+    to_user_id = Column(Integer, nullable=False, default=0, index=True)
+    create_time = Column(Integer, nullable=False, default=0)
+
+
+class AddonUser(Base):
+    __tablename__ = "lb_user"
+
+    id = Column(Integer, primary_key=True, autoincrement=True, comment="ID")
+    mid = Column(String(20), nullable=True, default="", comment="外部ID")
+    password = Column(String(128), nullable=False, default="", comment="密码")
+    user_name = Column(String(80), nullable=False, default="", comment="用户名")
+    user_nickname = Column(String(80), nullable=False, default="", comment="昵称")
+    mobile = Column(String(50), nullable=False, default="", comment="手机号")
+    head_img = Column(String(256), nullable=False, default="", comment="头像")
+    user_email = Column(String(100), nullable=False, default="", comment="用户邮箱")
+    last_login_time = Column(Integer, nullable=False, default=0, comment="最后登录时间")
+    last_login_ip = Column(Integer, nullable=False, default=0, comment="最后登录ip")
+    create_time = Column(Integer, nullable=False, default=0, comment="创建时间")
+    update_time = Column(Integer, nullable=False, default=0, comment="更新时间")
+    status = Column(SmallInteger, nullable=False, default=1, comment="状态")
+    lastid = Column(Integer, nullable=False, default=0, comment="邀请人")
+    last_time = Column(Integer, nullable=False, default=0, comment="邀请我的时间")
+    score = Column(DECIMAL(20, 2), nullable=False, default=0.00, comment="积分")
+    user_money = Column(DECIMAL(20, 2), nullable=False, default=0.00, comment="余额")
+    total_consumption_money = Column(
+        DECIMAL(20, 2), nullable=False, default=0.00, comment="总计消费"
+    )
+    freeze_money = Column(DECIMAL(20, 0), nullable=False, default=0, comment="冻结金额")
+    chat_uid = Column(
+        String(32), nullable=False, default="", comment="注册到聊天模块的ID"
+    )
+    chat_user_key = Column(
+        String(32), nullable=False, default="", comment="注册到聊天模块的key"
+    )
+    pay_password = Column(String(64), nullable=False, default="", comment="支付密码")
+    is_delete = Column(SmallInteger, nullable=False, default=0, comment="是否已注销")
+    user_level = Column(Integer, nullable=False, default=0, comment="等级")

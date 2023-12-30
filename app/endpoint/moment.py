@@ -1,15 +1,14 @@
-from datetime import datetime
-from typing import List, Optional
+from typing import List
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, or_, func, and_, join, exists
+from sqlalchemy import select, func
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth.deps import get_current_user
-from app.db.get_db import get_db
+from app.db.get_db import get_db, get_db2
 from app.models.moment import Post, Likes, Comments, User, Friends
 from app.schemas.moment import PostCreate, PostLike, PostComment
 from app.schemas.mypost import PostModel, CommentModel, LikeModel, AllPosts
@@ -21,6 +20,7 @@ from app.schemas.readposts import (
     OneMoment,
     AllMoments,
 )
+from app.utills.is_block import is_block
 
 router = APIRouter()
 
@@ -133,6 +133,7 @@ async def get_friends_posts(
     page: int = 0,
     page_size: int = 5,
     db: AsyncSession = Depends(get_db),
+    db2: AsyncSession = Depends(get_db2),
 ):
     subquery = (
         select(Friends.from_id)
@@ -172,13 +173,17 @@ async def get_friends_posts(
     else:
         friend_posts = []
     for friend_post in friend_posts:
-        user = await get_user_by_id(friend_post.Post.user_id, db)
-        if friend_info[user.id] != "":
-            user.nickname = friend_info[user.id]
+        friend = await get_user_by_id(friend_post.Post.user_id, db)
+        if await is_block(user.uid, friend.uid, db2):
+            continue
+        if friend_info[friend.id] != "":
+            friend.nickname = friend_info[friend.id]
         else:
-            user.nickname = user.nickname
+            friend.nickname = friend.nickname
         moment = OneMoment(
-            user=UserInfo(user_id=user.id, avatar=user.avatar, nickname=user.nickname),
+            user=UserInfo(
+                user_id=friend.id, avatar=friend.avatar, nickname=friend.nickname
+            ),
             post=ReadPost(
                 id=friend_post.Post.id,
                 user_id=friend_post.Post.user_id,
