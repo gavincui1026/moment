@@ -1,12 +1,14 @@
 from urllib.request import Request
 from app.db.get_db import get_db
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 import uvicorn
 from app.endpoint import moment, follow, get_oss_sign, rest
+from app.push.fcm_push import FirebasePush
 from starlette.responses import Response
 import logging
 from fastapi.middleware.cors import CORSMiddleware
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("uvicorn.error")
@@ -23,38 +25,14 @@ app.include_router(moment.router, prefix="/api")
 app.include_router(follow.router, prefix="/api")
 app.include_router(get_oss_sign.route, prefix="/api")
 app.include_router(rest.router, prefix="/api")
-# @app.middleware("http")
-# async def token_auth_middleware(request: Request, call_next):
-#     # 允许 CORS 预检请求直接通过
-#     # if request.method == "OPTIONS":
-#     #     headers = {
-#     #         "Access-Control-Allow-Origin": "*",
-#     #         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-#     #         "Access-Control-Allow-Headers": "Origin, Content-Type, Accept, Authorization",
-#     #     }
-#     #     return Response(status_code=200, headers=headers)
-#
-#     # 对于其他请求，执行原有的逻辑
-#     if request.url.path in ["/docs", "/openapi.json"]:
-#         return await call_next(request)
-#
-#     uid = request.headers.get('uid')
-#     token = request.headers.get('api_token')
-#     headers = {
-#         "Access-Control-Allow-Origin": "*",  # 根据实际情况可能需要更严格的设置
-#         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-#         "Access-Control-Allow-Headers": "Origin, Content-Type, Accept, Authorization",
-#         "Access-Control-Allow-Credentials": "true",  # 如果您需要凭证
-#     }
-#
-#     if not uid or not token:
-#         return JSONResponse(status_code=400, content={"detail": "缺少必要的认证参数"},headers=headers)
-#
-#     # db = get_db()
-#     # if not await TokenOperations.check_user_token(uid, token, db):
-#     #     return JSONResponse(status_code=401, content={"detail": "TOKEN验证失败"},headers=headers)
-#
-#     return await call_next(request)
+
+
+@app.on_event("startup")
+async def push():
+    push = FirebasePush()
+    background_tasks = BackgroundTasks()
+    background_tasks.add_task(push.start)
+    await background_tasks()
 
 
 if __name__ == "__main__":

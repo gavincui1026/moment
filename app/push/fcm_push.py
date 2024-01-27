@@ -1,11 +1,8 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import messaging
-from push import PushService
+from .push import PushService
 import asyncio
-
-cred = credentials.Certificate("barddies-firebase-adminsdk-aqjd4-8a1e3509cb.json")
-default_app = firebase_admin.initialize_app(cred)
 
 
 class FirebasePush(PushService):
@@ -13,6 +10,10 @@ class FirebasePush(PushService):
         super().__init__(*args, **kwargs)
 
     def callback(self, device_ids, title, content, payload):
+        cred = credentials.Certificate(
+            "barddies-firebase-adminsdk-aqjd4-8a1e3509cb.json"
+        )
+        default_app = firebase_admin.initialize_app(cred)
         print(f"------callback: {device_ids}------")
         print(f"------callback: {title}------")
         print(f"------callback: {content}------")
@@ -33,8 +34,3 @@ class FirebasePush(PushService):
                 print(
                     f"Failed to send message to {message.tokens[idx]}: {result.exception}"
                 )
-
-
-if __name__ == "__main__":
-    push = FirebasePush()
-    asyncio.run(push.start())

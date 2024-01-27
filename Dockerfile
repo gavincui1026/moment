@@ -8,7 +8,7 @@ WORKDIR /moment
 COPY . /moment
 
 # 安装依赖
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt \
 run pip install gunicorn
 # 指定对外暴露的端口
 EXPOSE 8000

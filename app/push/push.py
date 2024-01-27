@@ -6,6 +6,7 @@ import time
 import configparser
 import asyncio
 import aioredis
+from pathlib import Path
 
 
 class PushService:
@@ -23,8 +24,11 @@ class PushService:
         self.chat_group_interval = {}
 
     async def get_redis_client(self):
+        current_file = Path(__file__).resolve()
+        current_dir = current_file.parent
+        current_path = current_dir.joinpath("config.ini")
         config = configparser.ConfigParser()
-        config.read("config.ini")
+        config.read(current_path)
         redis_client = aioredis.from_url(
             f"redis://{config.get('redis', 'redis_host')}:{config.get('redis', 'redis_port')}",
             db=int(config.get("redis", "redis_db")),
