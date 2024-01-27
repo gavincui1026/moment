@@ -16,3 +16,14 @@ class PostComment(BaseModel):
     post_id: int
     content: str
     parent_id: int
+
+
+class Cordination(BaseModel):
+    lat: float
+    lng: float
+
+
+class AccurateAddress(BaseModel):
+    address: str
+    lat: float
+    lng: float

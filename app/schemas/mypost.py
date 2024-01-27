@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from app.schemas.readposts import Like, Comment
 
 
 # Likes的Pydantic模型
@@ -30,11 +31,14 @@ class CommentModel(BaseModel):
 class PostModel(BaseModel):
     id: int
     user_id: int
+    avatar: str
+    nickname: str
     create_time: datetime
     content: str
     pictures: List[str]  # 根据您的JSON列类型进行调整
-    likes: List[LikeModel] = []
-    comments: List[CommentModel] = []
+    likes: List[Like] = []
+    comments: List[Comment] = []
+    is_liked: bool
 
     class Config:
         orm_mode = True

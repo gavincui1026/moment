@@ -7,6 +7,7 @@ class UserInfo(BaseModel):
     user_id: int
     avatar: str
     nickname: str
+    uid: str
 
 
 class Like(BaseModel):
@@ -32,6 +33,7 @@ class ReadPost(BaseModel):
     pictures: List[str]
     likes: List[Like] = []
     comments: List[Comment] = []
+    is_liked: bool = False
 
 
 class OneMoment(BaseModel):

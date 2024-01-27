@@ -10,4 +10,4 @@ class AddonUserModel(BaseModel):
 
 
 class BlacklistModel(BaseModel):
-    Blacklist: Optional[List[AddonUserModel]] = []
+    blacklist: Optional[List[AddonUserModel]]

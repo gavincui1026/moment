@@ -2,6 +2,8 @@ from pydantic import BaseModel
 
 from typing import Optional, List
 
+from sqlalchemy import Float
+
 
 class Follower(BaseModel):
     uid: str
@@ -12,3 +14,7 @@ class Follower(BaseModel):
 
 class FollowsModel(BaseModel):
     followers: List[Follower]
+
+
+class Uid(BaseModel):
+    uid: str

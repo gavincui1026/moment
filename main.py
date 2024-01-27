@@ -3,7 +3,7 @@ from app.db.get_db import get_db
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import uvicorn
-from app.endpoint import moment, follow
+from app.endpoint import moment, follow, get_oss_sign, rest
 from starlette.responses import Response
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +21,8 @@ app.add_middleware(
 # 注册路由
 app.include_router(moment.router, prefix="/api")
 app.include_router(follow.router, prefix="/api")
+app.include_router(get_oss_sign.route, prefix="/api")
+app.include_router(rest.router, prefix="/api")
 # @app.middleware("http")
 # async def token_auth_middleware(request: Request, call_next):
 #     # 允许 CORS 预检请求直接通过
@@ -56,4 +58,4 @@ app.include_router(follow.router, prefix="/api")
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="debug")

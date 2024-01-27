@@ -9,9 +9,11 @@ from sqlalchemy import (
     Text,
     SmallInteger,
     DECIMAL,
+    select,
+    desc,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, selectinload
 from sqlalchemy.sql import func
 
 Base = declarative_base()
@@ -49,6 +51,42 @@ class Post(Base):
     pictures = Column(JSON)
     likes = relationship("Likes", backref="post")
     comments = relationship("Comments", backref="post")
+    user = relationship("User")
+
+    @classmethod
+    async def get_posts(cls, user_list: list, page, page_size, db):
+        query = (
+            select(cls)
+            .where(cls.user_id.in_(user_list))
+            .options(
+                selectinload(cls.likes).selectinload(Likes.user),
+                selectinload(cls.comments).selectinload(Comments.user),
+                selectinload(cls.user),
+            )
+            .order_by(desc(cls.create_time))
+            .offset(page * page_size)  # 跳过前面的页数
+            .limit(page_size)  # 返回当前页的条目
+        )
+        result = await db.execute(query)
+        posts = result.scalars().all()
+        total = select(func.count(cls.id)).where(cls.user_id.in_(user_list))
+        result = await db.execute(total)
+        total = result.scalar()
+        return posts, total
+
+    @classmethod
+    async def get_userid(cls, post_id: int, db):
+        query = select(cls).where(cls.id == post_id)
+        result = await db.execute(query)
+        post = result.scalars().first()
+        return post.user_id
+
+    @classmethod
+    async def get_post(cls, post_id: int, db):
+        query = select(cls).where(cls.id == post_id)
+        result = await db.execute(query)
+        post = result.scalars().first()
+        return post
 
 
 class Likes(Base):
@@ -59,6 +97,16 @@ class Likes(Base):
         Integer, ForeignKey("lb_chat.id"), nullable=False, default=0, index=True
     )
     user = relationship("User")
+
+    @classmethod
+    async def is_liked(cls, user_id: int, post_id: int, db):
+        query = select(cls).where(cls.user_id == user_id, cls.post_id == post_id)
+        result = await db.execute(query)
+        like = result.scalars().first()
+        if like:
+            return True
+        else:
+            return False
 
 
 class Comments(Base):
@@ -83,6 +131,19 @@ class Friends(Base):
     status = Column(SmallInteger, nullable=False, default=1)
     is_block = Column(SmallInteger, nullable=False, default=0)
 
+    @classmethod
+    async def get_all_friends(cls, user_id: int, db):
+        query = select(cls).where(cls.from_id == user_id)
+        result = await db.execute(query)
+        friends = result.scalars().all()
+        friends_list = []
+        for friend in friends:
+            query = select(User).where(User.id == friend.to_id)
+            result = await db.execute(query)
+            user = result.scalars().first()
+            friends_list.append(user)
+        return friends_list
+
 
 class Block(Base):
     __tablename__ = "lb_user_block"
@@ -90,6 +151,16 @@ class Block(Base):
     user_id = Column(Integer, nullable=False, default=0, index=True)
     to_user_id = Column(Integer, nullable=False, default=0, index=True)
     create_time = Column(Integer, nullable=False, default=0)
+
+    @classmethod
+    async def is_block(cls, user_id: int, to_user_id: int, db2):
+        query = select(cls).where(cls.user_id == user_id, cls.to_user_id == to_user_id)
+        result = await db2.execute(query)
+        block = result.scalars().first()
+        if block:
+            return True
+        else:
+            return False
 
 
 class AddonUser(Base):
