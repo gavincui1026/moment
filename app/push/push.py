@@ -201,7 +201,7 @@ class PushService:
     async def process_group_msg(self, device_id, data):
         # print(f"------process_group_msg: {device_id}------")
         print(data)
-        keyname = data["msgid"]
+        keyname = device_id
         print(keyname)
 
         if keyname not in self.chat_group_history:
@@ -222,6 +222,7 @@ class PushService:
             )
             self.chat_group_data[keyname] = None
             self.chat_group_history[keyname] = []
+
         del self.chat_group_interval[keyname]
 
     def send_msg(self, device_ids, data):
