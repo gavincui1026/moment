@@ -52,6 +52,7 @@ class PushService:
                     ignore_subscribe_messages=True  # 忽略订阅消息
                 )
                 if message and message["type"] == "message":
+                    print("收到消息")
                     channel = message["channel"]
                     data = message["data"]
 
@@ -75,19 +76,18 @@ class PushService:
 
     async def sendMessageInfo(self, data):
         if data.get("is_refuse"):
-            print("refuse")
             return False
-
-        push_channel = data.get("offLinePush", {}).get("channel", "default")
-
+        push_channel = data.get("offLinePush", {})
         if push_channel != "default":
             return False
 
         session_type = data.get("session_type", "")
+        print("session_type", session_type)
         is_all = False
         # C2C 单聊
         if session_type == self.c2c:
             chat_to_id = data.get("chat_to_id")
+            print("chat_to_id", chat_to_id)
             if not chat_to_id:
                 print("chatId error")
                 return False
@@ -245,8 +245,8 @@ class PushService:
             content = data["session_content"]
         elif data["session_type"] == self.moment:
             data["from_user"] = json.loads(data["from_user"])
-            title = data["from_user"]["nickname"]
-            content = data["session_content"]
+            title = "Moment"
+            content = data["from_user"]["nickname"] + data["session_content"]
         payload = json.dumps(data)
 
         self.callback(device_ids, title, content, payload)
