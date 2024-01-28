@@ -5,18 +5,19 @@ from app.push.push import PushService
 import os
 import asyncio
 
+current_directory = os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(
+    current_directory, "barddies-firebase-adminsdk-aqjd4-8a1e3509cb.json"
+)
+cred = credentials.Certificate(json_path)
+default_app = firebase_admin.initialize_app(cred)
+
 
 class FirebasePush(PushService):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def callback(self, device_ids, title, content, payload):
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-        json_path = os.path.join(
-            current_directory, "barddies-firebase-adminsdk-aqjd4-8a1e3509cb.json"
-        )
-        cred = credentials.Certificate(json_path)
-        default_app = firebase_admin.initialize_app(cred)
         print(f"------callback: {device_ids}------")
         print(f"------callback: {title}------")
         print(f"------callback: {content}------")
@@ -41,11 +42,4 @@ class FirebasePush(PushService):
 
 if __name__ == "__main__":
     push = FirebasePush()
-    push.callback(
-        device_ids=[
-            "dZlDPPY74E21j8Akkz5n-X:APA91bHJzuQttY7gbD7V_abdjWbqOtlKpSuXhyn3fQ01oGfJtcz-K-hohXRc6qHzmKH1howvewaPSt1aepKMZncK41NR-e857EFNtMFyUG7DefyxaOyQiFZqJsYYyCxfMYnq8xz8oElH"
-        ],
-        title="test",
-        content="test",
-        payload="test",
-    )
+    asyncio.run(push.start())

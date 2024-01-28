@@ -1,3 +1,4 @@
+import asyncio
 from urllib.request import Request
 from app.db.get_db import get_db
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -8,7 +9,7 @@ from app.push.fcm_push import FirebasePush
 from starlette.responses import Response
 import logging
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.utills.lock import lock
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("uvicorn.error")
@@ -28,11 +29,11 @@ app.include_router(rest.router, prefix="/api")
 
 
 @app.on_event("startup")
-async def push():
-    push = FirebasePush()
-    background_tasks = BackgroundTasks()
-    background_tasks.add_task(push.start)
-    await background_tasks()
+async def startup_event():
+    if lock():
+        push = FirebasePush()
+        asyncio.create_task(push.start())
+    pass
 
 
 if __name__ == "__main__":

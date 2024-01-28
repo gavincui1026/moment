@@ -188,6 +188,12 @@ class PushService:
             self.chat_interval[keyname] = asyncio.create_task(
                 self.check_and_process(keyname)
             )
+        else:
+            self.chat_interval[keyname].cancel()
+            del self.chat_interval[keyname]
+            self.chat_interval[keyname] = asyncio.create_task(
+                self.check_and_process(keyname)
+            )
 
     async def check_and_process(self, keyname):
         await asyncio.sleep(0.2)
@@ -200,9 +206,7 @@ class PushService:
 
     async def process_group_msg(self, device_id, data):
         # print(f"------process_group_msg: {device_id}------")
-        print(data)
         keyname = device_id
-        print(keyname)
 
         if keyname not in self.chat_group_history:
             self.chat_group_history[keyname] = []
@@ -244,7 +248,5 @@ class PushService:
             title = data["from_user"]["nickname"]
             content = data["session_content"]
         payload = json.dumps(data)
-        self.callback(device_ids, title, content, payload)
 
-    def callback(self, device_ids, title, content, payload):
-        pass
+        self.callback(device_ids, title, content, payload)
