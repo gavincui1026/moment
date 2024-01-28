@@ -1,0 +1,5 @@
+--- aioredis/exceptions.py.orig	2019-03-20 14:22:58 UTC
++++ aioredis/exceptions.py
+@@ -13,1 +13,1 @@
+-class TimeoutError(asyncio.TimeoutError, builtins.TimeoutError, RedisError):
++class TimeoutError(builtins.TimeoutError, RedisError):
